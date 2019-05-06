@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>BIMData front app example</title>
+  <script src="https://cdn.rawgit.com/GluuFederation/openid-implicit-client/master/openidconnect.js"></script>
+  <script src="https://unpkg.com/@bimdata/bimdata-api-client@^3.3.5/dist/javascript-api-client.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+  // FROM https://gluu.org/docs/ce/integration/spa/oauth-js-implicit/
+  OIDC.restoreInfo();
+  var id_token = OIDC.getValidIdToken();
+  var accessToken = OIDC.getAccessToken();
+  var tokenClaims = JSON.parse(OIDC.getIdTokenParts(id_token)[1]);
+  sessionStorage.setItem('accessToken', accessToken);
+
+  window.location.replace("home.html");
+
+</script>
+</body>
+</html>

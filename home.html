@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>BIMData front app example</title>
+  <script src="https://unpkg.com/@bimdata/bimdata-api-client@^3.3.5/dist/javascript-api-client.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.0/dist/vue.js"></script>
+  <script src="https://unpkg.com/vue-select@3.1.0"></script>
+  <link rel="stylesheet" href="https://unpkg.com/vue-select@3.1.0/dist/vue-select.css">
+</head>
+<body>
+<div id ="app">
+  <header>
+    <a href="/">Back to login</a>
+  </header>
+  <h2>You are {{ user.firstname }} {{ user.lastname }}</h2>
+  <h3>Total clouds count</h3>
+  <p>{{cloudNumber}}</p>
+  <h3>Total project count</h3>
+  <p>{{projectNumber}}</p>
+  <h3>Total IFC count</h3>
+  <p>{{ifcNumber}}</p>
+  <h3>Select a model to open in BIMData Viewer:</h3>
+  <p>cloud:</p>
+  <v-select label="name" :options="clouds" v-model="selectedCloud"></v-select>
+  <div v-if="selectedCloud">
+    <p>project:</p>
+    <v-select label="name" :options="selectedCloud.projects" v-model="selectedProject"></v-select>
+  </div>
+  <div v-if="selectedProject">
+    <p>model:</p>
+    <v-select label="name" :options="selectedProject.ifcs" v-model="selectedIfc"></v-select>
+  </div>
+  <div v-if="viewerUrl">
+    <iframe :src="viewerUrl" width="100%" height="100%" class="no-borders"></iframe>
+  </div>
+</div>
+<script type="text/javascript">
+  // Setup BIMData API Client with selected environment (default: production)
+  const BIMDataAPI = bimdata.ApiClient.instance;
+  BIMDataAPI.basePath = 'https://api-next.bimdata.io';
+  let authenticationOptions = BIMDataAPI.authentications['Bearer'];
+  authenticationOptions.type = 'oauth2';
+  // Set access token retrieved with OpenID Connect
+  authenticationOptions.accessToken = sessionStorage.getItem('accessToken');
+
+  const cloudClient = new bimdata.CloudApi();
+  const projectClient = new bimdata.ProjectApi();
+  const ifcClient = new bimdata.IfcApi();
+  const userClient = new bimdata.UserApi();
+
+  Vue.component('v-select', VueSelect.VueSelect);
+  var app = new Vue({
+    el: '#app',
+    data: {
+      user: {},
+      clouds: [],
+      projects: [],
+      ifcs: [],
+      selectedCloud: null,
+      selectedProject: null,
+      selectedIfc: null,
+    },
+    created: async function() {
+      this.user = await this.fetchUser();
+      this.clouds = await this.fetchClouds();
+      const projectsCalls = this.clouds.map(async cloud => {
+        // For each cloud, fetch its projects
+        cloud.projects = await this.fetchProjects(cloud);
+        this.projects.push(...cloud.projects);
+        const ifcCalls = cloud.projects.map(async project => {
+          // For each project, fetch its models
+          const ifcs = await ifcClient.getIfcs(cloud.id, project.id)
+          const ifcWithProject = ifcs.map(ifc => {
+            ifc.project = project;
+            return ifc;
+          });
+          project.ifcs = ifcWithProject;
+          this.ifcs.push(...project.ifcs);
+        });
+        await Promise.all(ifcCalls); // Wait for all models fetched
+      });
+      await Promise.all(projectsCalls); // Wait for all projects fetched
+    },
+    methods: {
+      fetchClouds: async function() {
+        return cloudClient.getClouds();
+      },
+      fetchUser: async function() {
+        return userClient.getSelfUser();
+      },
+      fetchProjects: async function(cloud) {
+        return projectClient.getProjects(cloud.id);
+      },
+      fetchIfcs: async function(project) {
+        let ifcs = await ifcClient.getIfcs(cloud.id, project.id);
+        project.ifcs = ifcs;
+        ifcs.forEach(ifc => ifc.project = project);
+        return ifcs;
+      }
+    },
+    computed: {
+      cloudNumber() {
+        return this.clouds.length;
+      },
+      projectNumber() {
+        return this.projects.length;
+      },
+      ifcNumber() {
+        return this.ifcs.length;
+      },
+      viewerUrl() {
+        if (this.selectedCloud && this.selectedProject && this.selectedIfc) {
+          return `https://viewer-next.bimdata.io/?cloudId=${this.selectedCloud.id}&projectId=${this.selectedProject.id}&ifcId=${this.selectedIfc.id}&accessToken=${sessionStorage.getItem('accessToken')}`
+        } else {
+          return null;
+        }
+      }
+    }
+  });
+</script>
+</body>
+</html>
