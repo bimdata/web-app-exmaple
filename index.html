@@ -16,7 +16,7 @@
     sessionStorage.removeItem('state');
     sessionStorage.removeItem('nonce');
 
-    var providerInfo = OIDC.discover('https://connect-next.bimdata.io'); // Or https://connect.bimdata.io/
+    var providerInfo = OIDC.discover('https://iam-next.bimdata.io/auth/realms/bimdata'); // Or https://iam.bimdata.io/auth/realms/bimdata
     var clientInfo = {
       client_id : '027354', // The client of your app. See https://developers.bimdata.io/
       redirect_uri : 'http://localhost:8080/login-callback.html'
@@ -29,7 +29,7 @@
 
     OIDC.login({
       scope : 'openid profile email',
-      response_type : 'id_token token'
+      response_type : 'code'
     });
   }
 </script>
