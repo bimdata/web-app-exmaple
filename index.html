@@ -16,9 +16,9 @@
     sessionStorage.removeItem('state');
     sessionStorage.removeItem('nonce');
 
-    var providerInfo = OIDC.discover('https://iam-next.bimdata.io/auth/realms/bimdata'); // Or https://iam.bimdata.io/auth/realms/bimdata
+    var providerInfo = OIDC.discover('https://iam.bimdata.io/auth/realms/bimdata');
     var clientInfo = {
-      client_id : '027354', // The client of your app. See https://developers.bimdata.io/
+      client_id : '192a3012-8457-4fbf-9bac-c72113765fe4', // The client of your app. See https://developers.bimdata.io/
       redirect_uri : 'http://localhost:8080/login-callback.html'
     };
 
@@ -29,7 +29,7 @@
 
     OIDC.login({
       scope : 'openid profile email',
-      response_type : 'code'
+      response_type : 'id_token token'
     });
   }
 </script>
